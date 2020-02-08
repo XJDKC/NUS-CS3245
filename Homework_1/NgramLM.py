@@ -36,7 +36,7 @@ class NgramLM:
             if ngrams in self.table:
                 self.table[ngrams] += 1
             else:
-                self.table[ngrams] = 0
+                self.table[ngrams] = 1
 
             # update global vocabulary
             if ngrams not in NgramLM.observed_grams:
@@ -49,7 +49,7 @@ class NgramLM:
         tokens = []
 
         if self.token_based:
-            text = text.trim().split()
+            text = text.strip().split()
 
         tokens = [x if self.case_sensitive else x.lower() for x in text]
 
@@ -59,7 +59,7 @@ class NgramLM:
 
         return tokens
 
-    def form_grams(self, tokens):
+    def form_ngrams(self, tokens):
         if self.start_end:
             tokens = ['^'] + tokens + ['$']
 
@@ -67,7 +67,7 @@ class NgramLM:
             tokens = tokens + [None] * (self.gram_size - len(tokens))
 
         end_index = len(tokens) - self.gram_size + 1
-        ngrams_list = [tokens[i:i + self.gram_size] for i in end_index]
+        ngrams_list = [tuple(tokens[i:i + self.gram_size]) for i in range(end_index)]
 
         return ngrams_list
 

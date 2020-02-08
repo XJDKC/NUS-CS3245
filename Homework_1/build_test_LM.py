@@ -10,6 +10,10 @@ import nltk
 import sys
 import getopt
 
+from NgramLM import NgramLM
+
+# global variable
+
 def build_LM(in_file):
     """
     build language models for each label
@@ -18,6 +22,16 @@ def build_LM(in_file):
     print('building language models...')
     # This is an empty method
     # Pls implement your code below in
+
+    LMs = {}
+    with open(in_file, 'r') as file:
+        for line in file:
+            (label, text) = line.strip("\r\n").split(" ", 1)
+            if label not in LMs:
+                LMs[label] = NgramLM()
+            LMs[label].train(text)
+
+    return LMs
 
 def test_LM(in_file, out_file, LM):
     """
@@ -28,6 +42,11 @@ def test_LM(in_file, out_file, LM):
     print("testing language models...")
     # This is an empty method
     # Pls implement your code in below
+
+    for lable in LM:
+        print(lable+":")
+        for key, value in LM[lable].get_table().items():
+            print(key, ":", value)
 
 def usage():
     print("usage: " + sys.argv[0] + " -b input-file-for-building-LM -t input-file-for-testing-LM -o output-file")
