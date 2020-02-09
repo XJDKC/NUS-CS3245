@@ -46,17 +46,19 @@ def test_LM(in_file, out_file, LM):
 
     with open(in_file, 'r') as in_file, \
         open(out_file, 'w') as out_file:
+        lineno = 0
         for line in in_file:
-            max_label = ""
+            max_label = "other"
             max_prob = -sys.float_info.max
             line = line.strip("\r\n")
             for label in LM:
-                prob = LM[label].predict(line)
-                if prob > max_prob:
+                probability, ignore_rate = LM[label].predict(line)
+                if probability > max_prob and ignore_rate < 0.6:
                     max_label = label
-                    max_prob = prob
+                    max_prob = probability
 
             print(max_label, line, file=out_file)
+            lineno += 1
 
 
 def usage():

@@ -47,29 +47,35 @@ class NgramLM:
         tokens = self.tokenize(text)
         ngrams_list = self.form_ngrams(tokens)
 
+        ignore_count = 0
         probability = 0.0 if use_log else 1.0
+        min_prob = -sys.float_info.max if use_log else 0.0
 
         for ngrams in ngrams_list:
             if ngrams in self.table:
                 count = self.table[ngrams]
-            else:
+            elif ngrams in NgramLM.observed_ngrams:
                 count = 0
+            else:
+                ignore_count += 1
+                continue
 
             if self.add_one_smoothing:
                 ngrams_prob = (count + 1) / float(self.total_num + len(NgramLM.observed_ngrams))
             else:
                 ngrams_prob = count / float(self.total_num)
 
+            if ngrams_prob == 0 or probability == min_prob:
+                probability = min_prob
+                continue
+
             if use_log:
-                if ngrams_prob == 0:
-                    return -sys.float_info.max
                 probability += math.log(ngrams_prob)
             else:
-                if ngrams_prob == 0:
-                    return 0.0
                 probability *= ngrams_prob
 
-        return probability
+        ignore_rate = ignore_count / float(len(ngrams_list))
+        return probability, ignore_rate
 
     def tokenize(self, text):
         tokens = []
