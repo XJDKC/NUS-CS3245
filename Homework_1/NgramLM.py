@@ -75,6 +75,9 @@ class NgramLM:
                 probability *= ngrams_prob
 
         ignore_rate = ignore_count / float(len(ngrams_list))
+        if ignore_rate == 1.0:
+            probability = min_prob
+
         return probability, ignore_rate
 
     def tokenize(self, text):
@@ -96,10 +99,11 @@ class NgramLM:
             tokens = ['^'] + tokens + ['$']
 
         if len(tokens) < self.gram_size:
-            tokens = tokens + [None] * (self.gram_size - len(tokens))
+            tokens = tokens + [''] * (self.gram_size - len(tokens))
 
         end_index = len(tokens) - self.gram_size + 1
-        ngrams_list = [''.join(tokens[i:i + self.gram_size]) for i in range(end_index)]
+        sep = ' ' if self.token_based else ''
+        ngrams_list = [sep.join(tokens[i:i + self.gram_size]) for i in range(end_index)]
 
         return ngrams_list
 
