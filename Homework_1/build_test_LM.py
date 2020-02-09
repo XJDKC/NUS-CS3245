@@ -44,16 +44,11 @@ def test_LM(in_file, out_file, LM):
     # This is an empty method
     # Pls implement your code in below
 
-    for lm in LM:
-        print(lm+':')
-        for key,value in LM[lm].get_table().items():
-            print(key,":",value)
-
     with open(in_file, 'r') as in_file, \
         open(out_file, 'w') as out_file:
         for line in in_file:
             max_label = ""
-            max_prob = 0.0
+            max_prob = -sys.float_info.max
             line = line.strip("\r\n")
             for label in LM:
                 prob = LM[label].predict(line)
@@ -61,7 +56,7 @@ def test_LM(in_file, out_file, LM):
                     max_label = label
                     max_prob = prob
 
-            print(label, line, file=out_file)
+            print(max_label, line, file=out_file)
 
 
 def usage():

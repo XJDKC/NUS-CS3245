@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-import time
+import sys
+import math
 from collections import defaultdict
 
 class NgramLM:
@@ -28,8 +29,8 @@ class NgramLM:
         self.add_one_smoothing = add_one_smoothing
 
         # record n-grams
-        self.table = defaultdict(lambda: 0)
         self.total_num = 0
+        self.table = defaultdict(lambda: 0)
 
     def train(self, text):
         tokens = self.tokenize(text)
@@ -42,10 +43,11 @@ class NgramLM:
             # update global vocabulary
             NgramLM.observed_ngrams.add(ngrams)
 
-    def predict(self, text):
+    def predict(self, text, use_log = True):
         tokens = self.tokenize(text)
         ngrams_list = self.form_ngrams(tokens)
-        probability = 1.0
+
+        probability = 0.0 if use_log else 1.0
 
         for ngrams in ngrams_list:
             if ngrams in self.table:
@@ -54,12 +56,18 @@ class NgramLM:
                 count = 0
 
             if self.add_one_smoothing:
-                probability *= (count + 1) / float(self.total_num + len(NgramLM.observed_ngrams) - len(self.table))
+                ngrams_prob = (count + 1) / float(self.total_num + len(NgramLM.observed_ngrams))
             else:
-                probability *= count / float(self.total_num)
+                ngrams_prob = count / float(self.total_num)
 
-            if probability == 0.0:
-                break
+            if use_log:
+                if ngrams_prob == 0:
+                    return -sys.float_info.max
+                probability += math.log(ngrams_prob)
+            else:
+                if ngrams_prob == 0:
+                    return 0.0
+                probability *= ngrams_prob
 
         return probability
 
