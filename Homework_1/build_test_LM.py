@@ -9,6 +9,7 @@ import re
 import nltk
 import sys
 import getopt
+import time
 
 from NgramLM import NgramLM
 
@@ -43,17 +44,32 @@ def test_LM(in_file, out_file, LM):
     # This is an empty method
     # Pls implement your code in below
 
-    for lable in LM:
-        print(lable+":")
-        for key, value in LM[lable].get_table().items():
-            print(key, ":", value)
+    for lm in LM:
+        print(lm+':')
+        for key,value in LM[lm].get_table().items():
+            print(key,":",value)
+
+    with open(in_file, 'r') as in_file, \
+        open(out_file, 'w') as out_file:
+        for line in in_file:
+            max_label = ""
+            max_prob = 0.0
+            line = line.strip("\r\n")
+            for label in LM:
+                prob = LM[label].predict(line)
+                if prob > max_prob:
+                    max_label = label
+                    max_prob = prob
+
+            print(label, line, file=out_file)
+
 
 def usage():
     print("usage: " + sys.argv[0] + " -b input-file-for-building-LM -t input-file-for-testing-LM -o output-file")
 
 input_file_b = input_file_t = output_file = None
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'b:t:o:')
+    opts, args = getopt.getopt(sys.argv[1:], 'b:t:o:csa')
 except getopt.GetoptError:
     usage()
     sys.exit(2)
