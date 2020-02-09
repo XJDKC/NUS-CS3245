@@ -1,0 +1,22 @@
+Q1: In the homework assignment, we are using character-based ngrams, i.e., the gram units are characters. Do you expect token-based ngram models to perform better?
+A1: I implement both. When I tested them, I found token-based ngram models doesn't perform as good as expected. After I printed the count of each ngrams, 
+    I found that many ngrams only appeared once. I think it's because token-based ngram models have a wider range of keywords. 
+    Take n=4 for example, in character-based ngrams, every gram can only be numbers, letters, spaces. As for token-based ngram, it can be any word.
+    Therefore, the differences between language models are actually small if we use token-based ngram models. That's why I think they have poor performance.
+    I think reducing n is a good way or we need a lot of data to train the models.
+
+Q2: What do you think will happen if we provided more data for each category for you to build the language models? What if we only provided more data for Indonesian?
+A2: We will get more accurate results because we have more information in this language.
+    If we just provide more data for Indonesian, the accuracy of our predictions for Indonesian will definitely improve. 
+    But this will make the overall vocabulary bigger, and most of the ngrams in the vocabulary are not appeared in the other two languages,
+    The probability of a string will decrease in the other two language models, which will cause a string to be more likely to be predicted as Indonesian.
+
+Q3: What do you think will happen if you strip out punctuations and/or numbers? What about converting upper case characters to lower case?
+A3: This will remove some other factors as punctuations and numbers appeared in every language. If we use more numbers to train a LM, the LM will have a low probability 
+    for a letter-only string. Converting upper case characters to lower case will have a similar effect. Every language model's prediction accuracy will increase.
+
+Q4: e use 4-gram models in this homework assignment. What do you think will happen if we varied the ngram size, such as using unigrams, bigrams and trigrams?
+A4: According to my tests, using unigrams will reduces accuracy because it does not take context into account. But When we keep increasing the value of n, 
+    the results show that the prediction accuracy will also decrease. As an extreme example, if we make n equal to the length of the string, for each model 
+    the probability of a string we tested is 1 / size_of_vocabulary, this is obviously meaningless.
+

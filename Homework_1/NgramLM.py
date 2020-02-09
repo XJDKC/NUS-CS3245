@@ -5,13 +5,22 @@ import math
 from collections import defaultdict
 
 class NgramLM:
-    """
-        NgramLM is a class aims to create a language model
+    """ NgramLM is a class aims to create a language model
         and use it to assign a probability to a sequence of words.
 
         In this class, I use the ngram knowledge will be used to build the LM.
+
+    Args:
+        name: the name of the language model
+        gram_size: the value of n in ngram model
+        token_based: boolean indicator for character-based or token-based ngram model
+        start_end: boolean indicator for adding start flag and end flag
+        case_sensitive: boolean indicator for converting string to lowercase
+        strip_out: boolean indicator for striping out punctuations and numbers
+        add_one_smoothing: boolean indicator for supporting add one smoothing
     """
 
+    # global vocabulary for every LM
     observed_ngrams = set()
 
     def __init__(self, name="", gram_size=4,
@@ -32,6 +41,11 @@ class NgramLM:
         self.total_num = 0
         self.table = defaultdict(lambda: 0)
 
+    """ Train the model based on input text
+    
+    Args:
+        text: the sentence to be trained
+    """
     def train(self, text):
         tokens = self.tokenize(text)
         ngrams_list = self.form_ngrams(tokens)
@@ -43,6 +57,16 @@ class NgramLM:
             # update global vocabulary
             NgramLM.observed_ngrams.add(ngrams)
 
+    """ Calculate the probability that the input text belongs to the current language model
+    
+    Args:
+        text: The text string to be predicted
+        use_log: boolean indicator for avoiding floating point underflow
+
+    Returns:
+        probability: Predicted probability
+        ignore_rate: the number of ignored ngrams as a percentage of total
+    """
     def predict(self, text, use_log = True):
         tokens = self.tokenize(text)
         ngrams_list = self.form_ngrams(tokens)
@@ -80,6 +104,14 @@ class NgramLM:
 
         return probability, ignore_rate
 
+    """ Tokenize the input text
+
+    Args:
+        text: the text string to be tokenized
+    
+    Returns:
+        tokens: the list of tokens obtained through tokenization
+    """
     def tokenize(self, text):
         tokens = []
 
@@ -94,6 +126,14 @@ class NgramLM:
 
         return tokens
 
+    """ Use tokens to from ngrams
+
+    Args:
+        tokens: the list of tokens obtained through tokenization
+    
+    Returns:
+        ngrams_list: the list of ngrams formed by tokens
+    """
     def form_ngrams(self, tokens):
         if self.start_end:
             tokens = ['^'] + tokens + ['$']
@@ -107,6 +147,11 @@ class NgramLM:
 
         return ngrams_list
 
+    """ get the table of all the ngrams
+
+    Returns:
+        table: the dict holding all ngrams and their corresponding counts
+    """
     def get_table(self):
         return self.table
 

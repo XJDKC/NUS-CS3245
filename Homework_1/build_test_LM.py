@@ -33,6 +33,7 @@ def build_LM(in_file):
     # This is an empty method
     # Pls implement your code below in
 
+    # LMs is a dict to store the LM for each language
     LMs = {}
     with open(in_file, 'r') as file:
         for line in file:
