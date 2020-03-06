@@ -1,0 +1,3 @@
+[submodule "Homework_2"]
+	path = Homework_2
+	url = git@github.com:cs-course-stu/CS3245-NUS-HW2.git
