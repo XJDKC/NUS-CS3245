@@ -24,14 +24,17 @@ class Searcher:
         rate: the penalty rate of the pivoted normalized document length
         expand: boolean indicator for using Query Expansion
         feedback: boolean indicator for using Relevance Feedback
+        pagerank: boolean indicator for using page rank algorithm
         pivoted: boolean indicator for using pivoted normalized document length
     """
 
-    def __init__(self, dictionary_file, postings_file, rate = 0.01,
-                 expand = True, feedback = True, pivoted = False, score = False):
+    def __init__(self, dictionary_file, postings_file, rate = 0.01, alpha = 0.1,
+                 expand = True, feedback = True, pagerank = True, pivoted = False, score = False):
         self.dictionary_file = dictionary_file
         self.postings_file = postings_file
         self.rate = rate
+        self.alpha = alpha
+        self.pagerank = pagerank
         self.pivoted = pivoted
         self.score = score
 
@@ -78,7 +81,86 @@ class Searcher:
        score: the list of the scores corresponding to the docIds
     """
     def rank(self, query_infos, postings_lists):
-        total_scores = defaultdict(lambda: 1)
+        total_scores = None
+
+        # step 1: use different algorithm to rank the documents
+        if self.pagerank:
+            # step 1-1: use page rank algorithm
+            total_scores = self._page_rank(query_infos, postings_lists)
+        else:
+            # step 1-2: use VSM(vector Sapce Model)
+            total_scores = self._vector_rank(query_infos, postings_lists)
+
+        # step 2: get the topK docs from the heap
+        heap = [(total_scores[doc], -doc) for doc in total_scores]
+        heap = heapq.nlargest(len(total_scores), heap, key=lambda x: x)
+
+        result = [-item[1] for item in heap]
+
+        score = []
+        if self.score:
+            score = [item[0] for item in heap]
+
+        # step 3: return the topK docs
+        return result, score
+
+    """ Rank the documents based on PageRank algorithm
+
+    Args:
+        query_infos: a list of instances of QueryInfo that contains the query
+        postings_lists: the dictionary with terms to posting lists mapping
+
+    Returns:
+       total_scores: the dictionary to record the score of each document
+    """
+    def _page_rank(self, query_infos, postings_lists):
+        total_scores = defaultdict(lambda: 0)
+
+        for query_info in query_infos:
+            # step 1: Initialize variables
+            terms = query_info.terms
+
+            # step 2: get universe of the docs
+            universe, universe_set = self._get_universe(terms, postings_lists)
+            doc_num = len(universe)
+
+            # step 3: generate probability transition matrix
+            matrix = self._generate_matrix(universe, universe_set)
+            scores = np.zeros((doc_num, ))
+            scores[0] = 1.0
+
+            print(matrix)
+            print(scores)
+            input()
+            # step 4: perform page rank algorithm
+            while True:
+                _scores = np.dot(matrix, scores)
+                loss = np.sum(np.abs(_scores - scores))
+                print('loss', loss)
+                scores = _scores
+                if loss < 1e-5:
+                    break
+
+            print(scores)
+
+            # step 5: update total scores
+            for i in range(doc_num):
+                doc = universe[i]
+                total_scores[doc] += scores[i]
+
+        return total_scores
+
+    """ Rank the documents based on VSM(Vector Space Model)
+
+    Args:
+        query_infos: a list of instances of QueryInfo that contains the query
+        postings_lists: the dictionary with terms to posting lists mapping
+
+    Returns:
+       total_scores: the dictionary to record the score of each document
+    """
+    def _vector_rank(self, query_infos, postings_lists):
+        total_scores = defaultdict(lambda: 0)
 
         for query_info in query_infos:
             # step 1: Initialize variables
@@ -117,18 +199,59 @@ class Searcher:
             for doc in scores:
                 total_scores[doc] += scores[doc]
 
-        # step 4: get the topK docs from the heap
-        heap = [(total_scores[doc], -doc) for doc in total_scores]
-        heap = heapq.nlargest(len(total_scores), heap, key=lambda x: x)
+        # step 5: return total scores
+        return total_scores
 
-        result = [-item[1] for item in heap]
+    """ Generate probability transition matrix for PageRank algorithm
 
-        score = []
-        if self.score:
-            score = [item[0] for item in heap]
+    Args:
+        universe: the universe of the docs that appear in one of the lists
+        universe_set: the universe set of the docs that appear in one of the lists
+    Returns:
+        matrix: the submatrix of the entire probability transition matrix
+    """
+    def _generate_matrix(self, universe, universe_set):
+        doc_num = len(universe)
+        matrix = np.zeros((doc_num, doc_num))
+        base = np.ones((doc_num, )) / doc_num
 
-        # step 5: return the topK docs
-        return result, score
+        for i in range(doc_num):
+            out_num = 0
+            for j in range(doc_num):
+                start = universe[i]
+                end = universe[j]
+                if end in self.indexer.outlinks[start]:
+                    out_num += 1
+                    matrix[i][j] = 1
+
+            if out_num:
+                matrix[i] /= out_num / (1- self.alpha)
+                print(matrix[i])
+                matrix[i] += base * self.alpha
+            else:
+                matrix[i] = base
+
+        return matrix
+
+    """ Get the universe of the docs that appear in one of the lists.
+
+    Args:
+        terms: all terms in the query string
+        postings_lists: the dictionary with terms to posting lists mapping
+    Returns:
+        universe: the universe of the docs that appear in one of the lists
+        universe_set: the universe set of the docs that appear in one of the lists
+    """
+    def _get_universe(self, terms, postings_lists):
+        universe_set = set()
+        for term in terms:
+            postings = postings_lists[term][1]
+            length = len(postings)
+            for i in range(0, length):
+                universe_set.add(postings[i])
+
+        universe = list(universe_set)
+        return universe, universe_set
 
     """ Get the intersection of docs
 

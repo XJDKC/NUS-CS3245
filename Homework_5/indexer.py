@@ -38,7 +38,6 @@ class Indexer:
         self.date_field = defaultdict(lambda: [])
         self.dictionary = {}
         self.outlinks = {}
-        self.matrix = None
         self.alpha = 0.1
         # dictionary[term] = location in postings.txt
 
@@ -183,22 +182,6 @@ class Indexer:
 
         return filtered_words
 
-    def build_transition_matrix(self):
-        total_num = len(self.total_doc)
-
-        matrix = np.zeros((total_num, total_num))
-        for docid in self.outlinks:
-            for i in range(total_num):
-                matrix[docid][i] = 1.0 / total_num * self.alpha
-
-            out_num = len(self.outlinks[docid])
-            for idx in self.outlinks[docid]:
-                matrix[docid][idx] += 1.0 / out_num * (1 - self.alpha)
-
-        self.matrix = matrix
-        np.set_printoptions(threshold=np.inf)
-        print(self.matrix)
-
     def build_index(self, in_dir):
         """
         build index from documents stored in the input directory,
@@ -267,7 +250,7 @@ class Indexer:
                 ids = line[OUTLINKS]
                 ids = [] if not ids else ids.split(' ')
                 line[OUTLINKS] = [int(_id) for _id in ids]
-                self.outlinks[doc_id] = line[OUTLINKS]
+                self.outlinks[doc_id] = set(line[OUTLINKS])
 
                 # print("read doc from csv: ")
                 # print(file_count)
@@ -280,9 +263,6 @@ class Indexer:
 
         # Calculate average
         self.average /= len(self.total_doc)
-
-        # Build transition matrix
-        self.build_transition_matrix()
 
         print("____________")
         print(total_count)
@@ -333,7 +313,7 @@ class Indexer:
         # pickle.dump(self.average, write_dictionary)
         # pickle.dump(self.total_doc, write_dictionary)
         # pickle.dump(self.court_field, write_dictionary)
-        pickle.dump(self.matrix, write_dictionary)
+        pickle.dump(self.outlinks, write_dictionary)
         pickle.dump(self.date_field, write_dictionary)
         pickle.dump(self.dictionary, write_dictionary)
 
@@ -355,7 +335,7 @@ class Indexer:
             # self.average = pickle.load(f)
             # self.total_doc = pickle.load(f)
             # self.court_field = pickle.load(f)
-            self.matrix = pickle.load(f)
+            self.outlinks = pickle.load(f)
             self.date_field = pickle.load(f)
             self.dictionary = pickle.load(f)
 
