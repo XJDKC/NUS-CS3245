@@ -32,7 +32,8 @@ class CrawlerPipeline:
 
                 ids = []
                 for outlink in item['outlinks']:
-                    ids.append(str(self.dataset[outlink]['docid']))
+                    if outlink in self.dataset:
+                        ids.append(str(self.dataset[outlink]['docid']))
                 item['outlinks'] = ' '.join(ids)
 
                 values = [item[field] for field in self.fields]
