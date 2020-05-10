@@ -13,7 +13,6 @@ class GoogleBlogSpider(scrapy.Spider):
             super(GoogleBlogSpider, self).__init__()
 
             self.parsed = False
-            self.parsed_pages = set()
 
             # setup html2text converter
             self.converter = html2text.HTML2Text()
@@ -33,7 +32,6 @@ class GoogleBlogSpider(scrapy.Spider):
                 for month in range(1, 6):
                     url = '{}/{:d}/{:0>2d}'.format(prefix, year, month)
                     GoogleBlogSpider.start_urls.append(url)
-                    self.parsed_pages.add(url)
 
             self.log(GoogleBlogSpider.start_urls)
 
@@ -50,7 +48,6 @@ class GoogleBlogSpider(scrapy.Spider):
 
                     if not self.parsed:
                         self.parsed = True
-                        self.parsed_pages.add(blog_url)
                         yield scrapy.Request(url=blog_url,callback=self.parse)
 
             elif re.match(self.blog_pattern, response.url):
@@ -62,18 +59,17 @@ class GoogleBlogSpider(scrapy.Spider):
                 header = post.xpath(".//div[@class='post-header']/div")
                 body = post.xpath(".//div[@class='post-body']/div")
 
+                item['url'] = response.url
                 item['title'] = title.xpath(".//a/text()").extract_first().strip()
                 item['date'] = header.xpath(".//span/text()").extract_first().strip()
                 item['authors'] = body.xpath(".//span/text()").extract_first().strip()
                 item['content'] = self.converter.handle(body.extract_first().strip())
-                item['urls'] = []
+                item['outlinks'] = set()
 
                 urls  = body.xpath(".//*[@href]/@href").extract()
                 for url in urls:
                     if re.match(self.blog_pattern, url):
-                        item['urls'].append(url)
-                        if url not in self.parsed_pages:
-                            self.parsed_pages.add(url)
-                            yield scrapy.Request(url=url,callback=self.parse)
+                        item['outlinks'].add(url)
+                        yield scrapy.Request(url=url,callback=self.parse)
 
                 yield item

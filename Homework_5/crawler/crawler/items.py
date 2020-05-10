@@ -13,10 +13,11 @@ class CrawlerItem(scrapy.Item):
     # name = scrapy.Field()
 
     docid = scrapy.Field()
+    url = scrapy.Field()
     title = scrapy.Field()
     date = scrapy.Field()
     authors = scrapy.Field()
     content = scrapy.Field()
-    urls = scrapy.Field()
+    outlinks = scrapy.Field()
 
     pass
